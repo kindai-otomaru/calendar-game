@@ -1,0 +1,20 @@
+[
+  {
+    "id": "color-pick",
+    "title": "色あてクイズ",
+    "subtitle": "9問で色の目利きに挑戦",
+    "file": "play_color_pick.html"
+  },
+  {
+    "id": "color-slider",
+    "title": "色合わせ",
+    "subtitle": "スライダーでお題の色に近づけよう",
+    "file": "play_color_slider.html"
+  },
+  {
+    "id": "print-quiz",
+    "title": "印刷クイズ",
+    "subtitle": "印刷のひみつを3問でチェック",
+    "file": "play_print_quiz.html"
+  }
+]
