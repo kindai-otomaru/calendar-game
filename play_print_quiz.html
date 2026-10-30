@@ -1,0 +1,174 @@
+<title>印刷クイズ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root { --bg:#FFF8E1; --surface:#FFFFFF; --fg:#2C2C2C; --muted:#6B7280; --brand:#173993; --on-brand:#FFFFFF; --accent:#FCC600; --soft:#D6DEF0; --good:#10B981; --bad:#EF4444; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif; font-size:16px; line-height:1.7; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+main { max-width:480px; margin:0 auto; padding-block:24px 40px; display:flex; flex-direction:column; gap:16px; }
+.card { background:var(--surface); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 2px 0 var(--soft); }
+.tag { align-self:flex-start; font-size:13px; background:var(--accent); color:#2C2C2C; border-radius:999px; padding:3px 12px; font-weight:700; }
+h1 { font-size:24px; line-height:1.35; margin:0; text-wrap:balance; }
+h2 { font-size:19px; line-height:1.6; margin:0; text-wrap:balance; }
+p { margin:0; color:var(--muted); }
+.count { font-size:14px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.opt { appearance:none; text-align:left; font:inherit; font-size:16px; color:var(--fg); background:var(--bg); border:3px solid transparent; border-radius:16px; padding:14px 16px; cursor:pointer; transition:transform .15s ease; }
+.opt:not(:disabled):active { transform:scale(.98); }
+.opt:focus-visible { outline:3px solid var(--accent); outline-offset:2px; }
+.opt.right { border-color:var(--good); }
+.opt.wrong { border-color:var(--bad); }
+.opt:disabled { cursor:default; }
+.choices { display:flex; flex-direction:column; gap:10px; }
+.say { font-weight:700; font-size:19px; min-height:30px; }
+.say.right { color:var(--good); }
+.say.wrong { color:#D93A3A; }
+.why { font-size:15px; color:var(--fg); background:var(--soft); border-radius:16px; padding:12px 14px; }
+.btn { appearance:none; border:0; cursor:pointer; font:inherit; font-weight:700; font-size:18px; padding:15px 20px; border-radius:999px; background:var(--brand); color:var(--on-brand); text-decoration:none; text-align:center; display:block; transition:transform .15s ease; }
+.btn:not(:disabled):active { transform:scale(.97); }
+.btn.sub { background:var(--accent); color:#2C2C2C; }
+.btn.ghost { background:transparent; color:var(--brand); border:2px solid var(--brand); }
+.btn:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.btn:disabled { opacity:.4; cursor:default; }
+.hidden-ui { display:none; }
+.big { font-size:52px; font-weight:700; color:var(--brand); line-height:1; font-variant-numeric:tabular-nums; }
+.title { font-size:22px; font-weight:700; }
+.stars { font-size:26px; letter-spacing:4px; color:var(--accent); text-shadow:0 1px 0 #B58900; }
+.bubble { background:var(--soft); border-radius:16px; padding:14px 16px; font-size:15px; color:var(--fg); }
+.bubble b { display:block; color:var(--brand); margin-bottom:4px; }
+</style>
+
+<main>
+  <div class="card">
+    <span class="tag">おためし版</span>
+    <h1>印刷クイズ</h1>
+    <p>印刷のひみつを、3問でさくっとチェック。答えると、ちょっとした理由も教えるよ。</p>
+  </div>
+
+  <div class="card" id="play">
+    <p class="count" id="count"></p>
+    <h2 id="question"></h2>
+    <div class="choices" id="choices"></div>
+    <p class="say" id="say"></p>
+    <p class="why hidden-ui" id="why"></p>
+    <button class="btn" id="next" disabled>次へ</button>
+  </div>
+
+  <div class="card hidden-ui" id="result">
+    <p>あなたの正解数</p>
+    <div class="big" id="score">0</div>
+    <div class="stars" id="stars"></div>
+    <div class="title" id="title"></div>
+    <div class="bubble"><b>ひとことアドバイス</b><span id="tip"></span></div>
+    <a class="btn sub" id="coupon" href="#" target="_blank" rel="noopener">LINEでクーポンをもらう</a>
+    <button class="btn ghost" id="retry">もう一回あそぶ</button>
+  </div>
+</main>
+
+<script>
+/* 毎月ここを差し替える（問題・選択肢・理由・クーポン取得URL）。answer は選択肢と同じ文字列 */
+const MONTH = {
+  questions: [
+    {
+      q: "名刺の、ふつうのサイズはどれ？（横×縦）",
+      answer: "91 × 55 mm",
+      choices: ["91 × 55 mm", "85 × 55 mm", "90 × 50 mm", "100 × 60 mm"],
+      why: "日本では91×55mmがよく使われています。85×55mmは海外で多いサイズなので、ひっかけ注意です。"
+    },
+    {
+      q: "パソコンで見た色と、印刷した色が違って見えるのはなぜ？",
+      answer: "画面は光、印刷はインクで色を出すから",
+      choices: ["画面は光、印刷はインクで色を出すから", "画面の色の数が少ないから", "印刷機の色を人が手で合わせるから", "紙に色がにじんで薄くなるから"],
+      why: "画面は光で色を作り、印刷はインクで色を作ります。だから同じデータでも、少し違って見えることがあるんです。"
+    },
+    {
+      q: "写真をきれいに印刷するには、どんな写真がいい？",
+      answer: "大きくて細かい、ぼやけていない写真",
+      choices: ["大きくて細かい、ぼやけていない写真", "小さく縮めた写真", "明るさをすごく上げた写真", "白い枠で囲んだ写真"],
+      why: "写真は細かさが足りないと、印刷するとぼやけて見えます。データを作る前に、写真のサイズを確認しておくと安心です。"
+    }
+  ],
+  couponUrl: "https://lin.ee/z10E4DV"
+};
+
+const $ = (id) => document.getElementById(id);
+let idx = 0, correct = 0, answered = false, order = [];
+
+function shuffle(a) { return a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]); }
+
+function render() {
+  const item = MONTH.questions[idx];
+  answered = false;
+  order = shuffle(item.choices);
+  $("count").textContent = `${idx + 1} / ${MONTH.questions.length} もんめ`;
+  $("question").textContent = item.q;
+  $("say").textContent = "";
+  $("say").className = "say";
+  $("why").classList.add("hidden-ui");
+  $("why").textContent = "";
+  $("next").disabled = true;
+  $("next").textContent = idx + 1 === MONTH.questions.length ? "けっかを見る" : "次へ";
+  const box = $("choices");
+  box.innerHTML = "";
+  order.forEach((text) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = text;
+    b.addEventListener("click", () => choose(text));
+    box.appendChild(b);
+  });
+}
+
+function choose(text) {
+  if (answered) return;
+  answered = true;
+  const item = MONTH.questions[idx];
+  const ok = text === item.answer;
+  if (ok) correct++;
+  [...$("choices").children].forEach((b) => {
+    b.disabled = true;
+    if (b.textContent === item.answer) b.classList.add("right");
+    else if (b.textContent === text) b.classList.add("wrong");
+  });
+  $("say").textContent = ok ? "せいかい！ やるね" : "おしい！ 緑の枠が正解だよ";
+  $("say").className = "say " + (ok ? "right" : "wrong");
+  $("why").textContent = item.why;
+  $("why").classList.remove("hidden-ui");
+  $("next").disabled = false;
+}
+
+$("next").addEventListener("click", () => {
+  idx++;
+  if (idx >= MONTH.questions.length) return showResult();
+  render();
+});
+
+function titleOf(n) {
+  if (n === 3) return "印刷はかせ！";
+  if (n === 2) return "印刷ものしり派";
+  if (n === 1) return "これから覚える派";
+  return "もう一回いこう！";
+}
+
+function showResult() {
+  $("play").classList.add("hidden-ui");
+  const n = MONTH.questions.length;
+  $("score").textContent = `${correct} / ${n}`;
+  $("stars").textContent = "★".repeat(correct) + "☆".repeat(n - correct);
+  $("title").textContent = titleOf(correct);
+  $("tip").textContent = "印刷は「見る人に、伝えたいことを分かりやすく届ける」ことが大事です。わからないことは、いつでも相談してください。";
+  $("coupon").href = MONTH.couponUrl;
+  $("result").classList.remove("hidden-ui");
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("retry").addEventListener("click", () => {
+  idx = 0; correct = 0;
+  $("result").classList.add("hidden-ui");
+  $("play").classList.remove("hidden-ui");
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+render();
+</script>

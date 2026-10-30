@@ -1,0 +1,172 @@
+<title>いろ当てチャレンジ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root { --bg:#FFF8E1; --surface:#FFFFFF; --fg:#2C2C2C; --muted:#6B7280; --brand:#173993; --on-brand:#FFFFFF; --accent:#FCC600; --soft:#D6DEF0; --good:#10B981; --bad:#EF4444; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif; font-size:16px; line-height:1.7; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+main { max-width:480px; margin:0 auto; padding-block:24px 40px; display:flex; flex-direction:column; gap:16px; }
+.card { background:var(--surface); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 2px 0 var(--soft); }
+.tag { align-self:flex-start; font-size:13px; background:var(--accent); color:#2C2C2C; border-radius:999px; padding:3px 12px; font-weight:700; }
+h1 { font-size:24px; line-height:1.35; margin:0; text-wrap:balance; }
+h2 { font-size:19px; line-height:1.5; margin:0; text-wrap:balance; }
+p { margin:0; color:var(--muted); }
+.count { font-size:14px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.target { height:160px; border-radius:20px; box-shadow:inset 0 0 0 4px #FFFFFF; }
+.choices { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.choice { appearance:none; border:4px solid transparent; border-radius:20px; height:110px; cursor:pointer; padding:0; transition:transform .15s ease; }
+.choice:not(:disabled):active { transform:scale(.96); }
+.choice:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.choice.right { border-color:var(--good); }
+.choice.wrong { border-color:var(--bad); opacity:.55; }
+.choice:disabled { cursor:default; }
+.say { font-weight:700; font-size:20px; min-height:32px; }
+.say.right { color:var(--good); }
+.say.wrong { color:#D93A3A; }
+.stars { font-size:26px; letter-spacing:4px; color:var(--accent); text-shadow:0 1px 0 #B58900; }
+.btn { appearance:none; border:0; cursor:pointer; font:inherit; font-weight:700; font-size:18px; padding:15px 20px; border-radius:999px; background:var(--brand); color:var(--on-brand); text-decoration:none; text-align:center; display:block; transition:transform .15s ease; }
+.btn:not(:disabled):active { transform:scale(.97); }
+.btn.sub { background:var(--accent); color:#2C2C2C; }
+.btn.ghost { background:transparent; color:var(--brand); border:2px solid var(--brand); }
+.btn:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.btn:disabled { opacity:.4; cursor:default; }
+.hidden-ui { display:none; }
+.big { font-size:52px; font-weight:700; color:var(--brand); line-height:1; font-variant-numeric:tabular-nums; }
+.title { font-size:22px; font-weight:700; }
+.bubble { background:var(--soft); border-radius:16px; padding:14px 16px; font-size:15px; color:var(--fg); }
+.bubble b { display:block; color:var(--brand); margin-bottom:4px; }
+@media (prefers-reduced-motion: reduce) { .choice, .btn { transition:none; } }
+</style>
+
+<main>
+  <div class="card">
+    <span class="tag">おためし版</span>
+    <h1>いろ当てチャレンジ</h1>
+    <p>上の色に一番近い色を、4つの中からタップしてね。9問で、サクッと遊べます。</p>
+  </div>
+
+  <div class="card" id="play">
+    <p class="count" id="count"></p>
+    <div class="target" id="target"></div>
+    <div class="choices" id="choices"></div>
+    <p class="say" id="say"></p>
+    <button class="btn" id="next" disabled>次へ</button>
+  </div>
+
+  <div class="card hidden-ui" id="result">
+    <p>あなたの正解数</p>
+    <div class="big" id="score">0</div>
+    <div class="stars" id="stars"></div>
+    <div class="title" id="title"></div>
+    <div class="bubble"><b>いろの豆知識</b><span id="fact"></span></div>
+    <a class="btn sub" id="coupon" href="#" target="_blank" rel="noopener">LINEでクーポンをもらう</a>
+    <button class="btn ghost" id="retry">もう一回あそぶ</button>
+  </div>
+</main>
+
+<script>
+/* 毎月ここを差し替える（豆知識・クーポン取得URL） */
+const MONTH = {
+  fact: "金色っぽい色は、紙の種類で見え方がガラッと変わります。同じデータでも、紙が違うと別の色に見えることがあるんです。",
+  couponUrl: "https://lin.ee/z10E4DV"
+};
+const TARGETS = [
+  [240, 200, 60],
+  [200, 40, 50],
+  [40, 90, 170],
+  [120, 180, 90],
+  [230, 120, 60],
+  [150, 60, 140],
+  [90, 200, 200],
+  [250, 170, 170],
+  [60, 60, 60]
+];
+const ROUNDS = 9;
+const rgb = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+const shift = (c, d) => c.map((v, i) => Math.max(0, Math.min(255, v + d[i])));
+const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+const $ = (id) => document.getElementById(id);
+
+let round = 0, correct = 0, answered = false, current = null;
+
+function makeRound() {
+  const t = TARGETS[Math.floor(Math.random() * TARGETS.length)];
+  const wrongs = [shift(t, [20, -15, 0]), shift(t, [-18, 12, 8]), shift(t, [0, 16, 22])];
+  return { target: t, options: shuffle([{ c: t, ok: true }, ...wrongs.map((c) => ({ c, ok: false }))]) };
+}
+
+const CHEER = ["ピンポーン！", "さすが！", "その調子！", "いいね、いい目してる！"];
+const OOPS = ["おしい！ 緑の枠が正解だよ", "惜しい！ 次はいけるかも", "ざんねん、緑の枠の色でした"];
+
+function render() {
+  current = makeRound();
+  answered = false;
+  $("count").textContent = `${round + 1} / ${ROUNDS} もんめ`;
+  $("target").style.background = rgb(current.target);
+  $("say").textContent = "どれかな？";
+  $("say").className = "say";
+  $("next").disabled = true;
+  $("next").textContent = round + 1 === ROUNDS ? "けっかを見る" : "次へ";
+  const box = $("choices");
+  box.innerHTML = "";
+  current.options.forEach((o, i) => {
+    const b = document.createElement("button");
+    b.className = "choice";
+    b.style.background = rgb(o.c);
+    b.setAttribute("aria-label", `えらぶ ${i + 1}`);
+    b.addEventListener("click", () => choose(b, o.ok));
+    box.appendChild(b);
+  });
+}
+
+function choose(btn, ok) {
+  if (answered) return;
+  answered = true;
+  if (ok) correct++;
+  [...$("choices").children].forEach((b, i) => {
+    b.disabled = true;
+    if (current.options[i].ok) b.classList.add("right");
+    else if (b === btn) b.classList.add("wrong");
+  });
+  const list = ok ? CHEER : OOPS;
+  $("say").textContent = list[Math.floor(Math.random() * list.length)];
+  $("say").className = "say " + (ok ? "right" : "wrong");
+  $("next").disabled = false;
+}
+
+$("next").addEventListener("click", () => {
+  round++;
+  if (round >= ROUNDS) return showResult();
+  render();
+});
+
+function titleOf(n) {
+  if (n === 9) return "いろの名人！";
+  if (n >= 7) return "いろ感キラキラ派";
+  if (n >= 4) return "バランス上手派";
+  if (n >= 1) return "これからもっと伸びる派";
+  return "もう一回いこう！";
+}
+
+function showResult() {
+  $("play").classList.add("hidden-ui");
+  $("score").textContent = `${correct} / ${ROUNDS}`;
+  $("stars").textContent = "★".repeat(correct) + "☆".repeat(ROUNDS - correct);
+  $("title").textContent = titleOf(correct);
+  $("fact").textContent = MONTH.fact;
+  $("coupon").href = MONTH.couponUrl;
+  $("result").classList.remove("hidden-ui");
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("retry").addEventListener("click", () => {
+  round = 0; correct = 0;
+  $("result").classList.add("hidden-ui");
+  $("play").classList.remove("hidden-ui");
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+render();
+</script>

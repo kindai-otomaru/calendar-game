@@ -1,0 +1,169 @@
+<title>いろ合わせチャレンジ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root { --bg:#FFF8E1; --surface:#FFFFFF; --fg:#2C2C2C; --muted:#6B7280; --brand:#173993; --on-brand:#FFFFFF; --accent:#FCC600; --soft:#D6DEF0; --good:#10B981; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif; font-size:16px; line-height:1.7; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); overflow-x:hidden; }
+main { max-width:480px; margin:0 auto; padding-block:24px 40px; display:flex; flex-direction:column; gap:16px; }
+.card { background:var(--surface); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px; position:relative; box-shadow:0 2px 0 var(--soft); }
+.tag { align-self:flex-start; font-size:13px; background:var(--accent); color:#2C2C2C; border-radius:999px; padding:3px 12px; font-weight:700; }
+h1 { font-size:24px; line-height:1.35; margin:0; text-wrap:balance; }
+p { margin:0; color:var(--muted); }
+.pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.sw { height:130px; border-radius:20px; display:flex; align-items:flex-end; justify-content:center; padding:10px; font-size:14px; font-weight:700; color:#FFFFFF; text-shadow:0 0 4px rgba(0,0,0,.5); }
+.sw.target { box-shadow:inset 0 0 0 4px #FFFFFF; }
+.gauge { height:18px; border-radius:999px; background:var(--soft); overflow:hidden; }
+.gauge > span { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--accent), var(--brand)); border-radius:999px; transition:width .35s ease; }
+.say { font-size:20px; font-weight:700; min-height:32px; color:var(--brand); }
+.sliders { display:flex; flex-direction:column; gap:12px; }
+.row { display:grid; grid-template-columns:28px 1fr 44px; align-items:center; gap:10px; }
+.row label { font-weight:700; font-size:17px; }
+.row output { text-align:right; font-variant-numeric:tabular-nums; color:var(--muted); }
+input[type="range"] { width:100%; accent-color:var(--brand); min-height:40px; }
+.btn { appearance:none; border:0; cursor:pointer; font:inherit; font-weight:700; font-size:18px; padding:15px 20px; border-radius:999px; background:var(--brand); color:var(--on-brand); text-decoration:none; text-align:center; display:block; transition:transform .15s ease; }
+.btn:not(:disabled):active { transform:scale(.97); }
+.btn.sub { background:var(--accent); color:#2C2C2C; }
+.btn.ghost { background:transparent; color:var(--brand); border:2px solid var(--brand); }
+.btn:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.btn:disabled { opacity:.4; cursor:default; }
+.hidden-ui { display:none; }
+.big { font-size:52px; font-weight:700; color:var(--brand); line-height:1; font-variant-numeric:tabular-nums; }
+.title { font-size:22px; font-weight:700; }
+.answer { font-size:15px; color:var(--muted); }
+.bubble { background:var(--soft); border-radius:16px; padding:14px 16px; font-size:15px; color:var(--fg); }
+.bubble b { display:block; color:var(--brand); margin-bottom:4px; }
+.burst { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:20px; }
+.burst i { position:absolute; top:45%; left:50%; width:12px; height:12px; border-radius:3px; animation:pop 1s ease-out forwards; }
+@keyframes pop { to { transform:translate(var(--x), var(--y)) rotate(var(--r)); opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .burst i { animation:none; opacity:0; } .gauge > span, .btn { transition:none; } }
+</style>
+
+<main>
+  <div class="card">
+    <span class="tag">おためし版</span>
+    <h1>いろ合わせチャレンジ</h1>
+    <p>スライダーを動かして、右のお題の色に近づけてね。チャンスは1回だけ。ピタッと合うとゲージが満タンになるよ。</p>
+  </div>
+
+  <div class="card" id="play">
+    <div class="pair">
+      <div class="sw target" id="target">お題</div>
+      <div class="sw" id="mine">あなた</div>
+    </div>
+    <div class="gauge" aria-hidden="true"><span id="gauge"></span></div>
+    <p class="say" id="say"></p>
+    <div class="sliders">
+      <div class="row"><label for="c">C</label><input type="range" id="c" min="0" max="100" step="10" value="50"><output id="c-out">50</output></div>
+      <div class="row"><label for="m">M</label><input type="range" id="m" min="0" max="100" step="10" value="50"><output id="m-out">50</output></div>
+      <div class="row"><label for="y">Y</label><input type="range" id="y" min="0" max="100" step="10" value="50"><output id="y-out">50</output></div>
+      <div class="row"><label for="k">K</label><input type="range" id="k" min="0" max="100" step="10" value="0"><output id="k-out">0</output></div>
+    </div>
+    <button class="btn" id="judge">これでいく！</button>
+    <div class="burst hidden-ui" id="burst"></div>
+  </div>
+
+  <div class="card hidden-ui" id="result">
+    <p>あなたのてん数</p>
+    <div class="big" id="score">0</div>
+    <div class="title" id="title"></div>
+    <p class="answer" id="answer"></p>
+    <div class="bubble"><b>いろの豆知識</b><span id="fact"></span></div>
+    <a class="btn sub" id="coupon" href="#" target="_blank" rel="noopener">LINEでクーポンをもらう</a>
+    <button class="btn ghost" id="retry">もう一回あそぶ</button>
+  </div>
+</main>
+
+<script>
+/* 毎月ここを差し替える（お題の色・豆知識・クーポン取得URL） */
+const MONTH = {
+  target: { c: 0, m: 20, y: 80, k: 10 },
+  fact: "黄色に少しだけ黒を混ぜると、金色っぽい色になります。ただし紙の色やインクで、見え方は大きく変わります。",
+  couponUrl: "https://lin.ee/z10E4DV"
+};
+const $ = (id) => document.getElementById(id);
+const ids = ["c", "m", "y", "k"];
+let done = false;
+
+function toRgb(v) {
+  return [255 * (1 - v.c / 100) * (1 - v.k / 100), 255 * (1 - v.m / 100) * (1 - v.k / 100), 255 * (1 - v.y / 100) * (1 - v.k / 100)].map(Math.round);
+}
+const css = (c) => `rgb(${c[0]},${c[1]},${c[2]})`;
+function cur() { return Object.fromEntries(ids.map((id) => [id, Number($(id).value)])); }
+function distance(v) {
+  const a = toRgb(MONTH.target), b = toRgb(v);
+  return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+/* ピッタリだけ100点。少しずれるほど点が下がる */
+function scoreOf(v) { return Math.max(0, Math.round(100 - distance(v) / 255 * 250)); }
+function say(s) {
+  if (s >= 100) return "ピッタリ！ すごい！";
+  if (s >= 90) return "ほぼ正解！ あと少し";
+  if (s >= 75) return "いい感じ！";
+  return "うーん、もうちょっと";
+}
+function paint() {
+  ids.forEach((id) => { $(id + "-out").textContent = $(id).value; });
+  const v = cur();
+  $("mine").style.background = css(toRgb(v));
+  const s = scoreOf(v);
+  $("gauge").style.width = Math.max(0, Math.min(100, (s - 50) * 2)) + "%";
+  $("say").textContent = say(s);
+}
+function confetti() {
+  const box = $("burst");
+  box.innerHTML = "";
+  const colors = ["#FCC600", "#173993", "#10B981", "#EF4444", "#7FA0F0"];
+  for (let n = 0; n < 22; n++) {
+    const i = document.createElement("i");
+    i.style.background = colors[n % colors.length];
+    i.style.setProperty("--x", (Math.random() * 280 - 140) + "px");
+    i.style.setProperty("--y", (Math.random() * 220 - 80) + "px");
+    i.style.setProperty("--r", (Math.random() * 720 - 360) + "deg");
+    box.appendChild(i);
+  }
+  box.classList.remove("hidden-ui");
+  setTimeout(() => box.classList.add("hidden-ui"), 1100);
+}
+function titleOf(s) {
+  if (s >= 100) return "いろの魔法使い！";
+  if (s >= 90) return "いろ感キラキラ派";
+  if (s >= 75) return "バランス上手派";
+  return "これから伸びる派";
+}
+
+ids.forEach((id) => $(id).addEventListener("input", paint));
+
+$("judge").addEventListener("click", () => {
+  if (done) return;
+  done = true;
+  const v = cur();
+  const s = scoreOf(v);
+  if (s >= 90) confetti();
+  $("judge").disabled = true;
+  $("score").textContent = `${s} てん`;
+  $("title").textContent = titleOf(s);
+  const t = MONTH.target;
+  $("answer").textContent = `お題の色は C${t.c} M${t.m} Y${t.y} K${t.k} でした。`;
+  $("fact").textContent = MONTH.fact;
+  $("coupon").href = MONTH.couponUrl;
+  setTimeout(() => {
+    $("play").classList.add("hidden-ui");
+    $("result").classList.remove("hidden-ui");
+    $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 1000);
+});
+
+$("retry").addEventListener("click", () => {
+  done = false;
+  $("judge").disabled = false;
+  $("result").classList.add("hidden-ui");
+  $("play").classList.remove("hidden-ui");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  paint();
+});
+
+$("target").style.background = css(toRgb(MONTH.target));
+paint();
+</script>
