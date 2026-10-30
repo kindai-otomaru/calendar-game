@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>いろとインクのあそびば</title>
+<style>
+:root { --bg:#FFF8E1; --surface:#FFFFFF; --fg:#2C2C2C; --muted:#6B7280; --brand:#173993; --on-brand:#FFFFFF; --accent:#FCC600; --soft:#D6DEF0; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif; font-size:16px; line-height:1.7; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+main { max-width:480px; margin:0 auto; padding-block:24px 40px; display:flex; flex-direction:column; gap:16px; }
+.hero { background:var(--brand); color:var(--on-brand); border-radius:20px; padding:24px 22px; }
+.hero .tag { display:inline-block; background:var(--accent); color:#2C2C2C; border-radius:999px; padding:3px 12px; font-size:13px; font-weight:700; }
+h1 { font-size:24px; line-height:1.35; margin:12px 0 6px; text-wrap:balance; }
+.hero p { margin:0; opacity:.9; }
+.list { display:flex; flex-direction:column; gap:12px; }
+.game { display:flex; flex-direction:column; gap:4px; background:var(--surface); color:var(--fg); text-decoration:none; border-radius:20px; padding:18px 20px; box-shadow:0 2px 0 var(--soft); border-left:8px solid var(--accent); transition:transform .15s ease; }
+.game strong { font-size:19px; color:var(--brand); }
+.game span { font-size:15px; color:var(--muted); }
+.game:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.game:active { transform:scale(.98); }
+.msg { color:var(--muted); }
+.foot { font-size:13px; color:var(--muted); text-align:center; margin:8px 0 0; }
+@media (prefers-reduced-motion: reduce) { .game { transition:none; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <span class="tag">あそんで、ためして、もらおう</span>
+    <h1>いろとインクのあそびば</h1>
+    <p>遊びたいゲームをえらんでね。どれも1分ほどで遊べます。</p>
+  </section>
+  <div class="list" id="list"><p class="msg">読み込み中…</p></div>
+  <p class="foot">有限会社近代印刷</p>
+</main>
+<script>
+Promise.all([
+  fetch("games.json", { cache: "no-cache" }).then((r) => r.json()),
+  fetch("data/month.json", { cache: "no-cache" }).then((r) => r.json())
+])
+  .then(([all, month]) => {
+    const pick = Array.isArray(month.games) ? month.games : null;
+    const games = pick ? pick.map((id) => all.find((g) => g.id === id)).filter(Boolean) : all;
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    games.forEach((g) => {
+      const a = document.createElement("a");
+      a.className = "game";
+      a.href = g.file;
+      const s1 = document.createElement("strong");
+      s1.textContent = g.title;
+      const s2 = document.createElement("span");
+      s2.textContent = g.subtitle;
+      a.append(s1, s2);
+      list.appendChild(a);
+    });
+  })
+  .catch(() => {
+    document.getElementById("list").innerHTML = '<p class="msg">読み込みに失敗しました。ページを開き直してください。</p>';
+  });
+</script>
+</body>
+</html>
