@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>いろ合わせチャレンジ</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -40,6 +45,8 @@ input[type="range"] { width:100%; accent-color:var(--brand); min-height:40px; }
 @media (prefers-reduced-motion: reduce) { .burst i { animation:none; opacity:0; } .gauge > span, .btn { transition:none; } }
 </style>
 
+</head>
+<body>
 <main>
   <div class="card">
     <span class="tag">おためし版</span>
@@ -167,3 +174,5 @@ $("retry").addEventListener("click", () => {
 $("target").style.background = css(toRgb(MONTH.target));
 paint();
 </script>
+</body>
+</html>
