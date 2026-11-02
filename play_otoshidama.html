@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お年玉キャッチ</title>
+<style>
+:root { --bg:#FFF8E1; --surface:#FFFFFF; --fg:#2C2C2C; --muted:#6B7280; --brand:#173993; --on-brand:#FFFFFF; --accent:#FCC600; --soft:#D6DEF0; --play:#FDF3C4; color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; --play:#24304F; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg:#141B2D; --surface:#1E2740; --fg:#F4F5F8; --muted:#B4BCD0; --brand:#7FA0F0; --on-brand:#141B2D; --soft:#2A3656; --play:#24304F; color-scheme: dark; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif; font-size:16px; line-height:1.7; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+main { max-width:480px; margin:0 auto; padding-block:20px 32px; display:flex; flex-direction:column; gap:14px; }
+.card { background:var(--surface); border-radius:20px; padding:20px; display:flex; flex-direction:column; gap:12px; box-shadow:0 2px 0 var(--soft); }
+.tag { align-self:flex-start; font-size:13px; background:var(--accent); color:#2C2C2C; border-radius:999px; padding:3px 12px; font-weight:700; }
+h1 { font-size:24px; line-height:1.35; margin:0; }
+p { margin:0; color:var(--muted); }
+.top { display:flex; justify-content:space-between; gap:12px; font-weight:700; font-size:18px; font-variant-numeric:tabular-nums; }
+.bar { height:12px; border-radius:999px; background:var(--soft); overflow:hidden; }
+.bar span { display:block; height:100%; width:100%; background:var(--accent); transform-origin:left center; }
+.field { position:relative; height:min(62vh,520px); border-radius:20px; background:var(--play); overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none; }
+.item { position:absolute; top:-60px; width:68px; height:44px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.15); }
+.gold { background:linear-gradient(135deg,#FCC600,#E0A800); color:#173993; border:2px solid #B58900; }
+.plain { background:#FFFFFF; color:#6B7280; border:2px solid #C9D1E3; }
+.pop { animation:pop .25s ease-out forwards; pointer-events:none; }
+@keyframes pop { to { transform:scale(1.5); opacity:0; } }
+.layer { position:absolute; inset:0; z-index:5; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:var(--play); padding:24px; text-align:center; }
+.layer p { color:var(--fg); font-size:20px; font-weight:700; }
+.btn { appearance:none; border:0; cursor:pointer; font:inherit; font-weight:700; font-size:18px; padding:15px 20px; border-radius:999px; background:var(--brand); color:var(--on-brand); text-decoration:none; text-align:center; display:block; width:100%; }
+.btn:disabled { opacity:.4; cursor:default; }
+.btn.sub { background:var(--accent); color:#2C2C2C; }
+.btn.ghost { background:transparent; color:var(--brand); border:2px solid var(--brand); }
+.btn:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.hidden { display:none !important; }
+.big { font-size:48px; font-weight:700; color:var(--brand); line-height:1; font-variant-numeric:tabular-nums; }
+.title { font-size:22px; font-weight:700; color:var(--fg); }
+.bubble { background:var(--soft); border-radius:16px; padding:14px 16px; font-size:15px; color:var(--fg); }
+.bubble b { display:block; color:var(--brand); margin-bottom:4px; }
+@media (prefers-reduced-motion: reduce) { .pop { animation:none; opacity:0; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <span class="tag">1月のゲーム（試作）</span>
+    <h1>お年玉キャッチ</h1>
+    <p>金色の封筒を、15秒でたくさん取ろう。白い封筒は取らないでね。</p>
+  </div>
+
+  <div class="card" id="play">
+    <div class="top"><span id="left">残り 15 秒</span><span id="count">取った数 0</span></div>
+    <div class="bar"><span id="timebar"></span></div>
+    <div class="field" id="field">
+      <div class="layer" id="start">
+        <p>準備はいい？</p>
+        <button class="btn" id="go" disabled>スタート</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="result">
+    <p>あなたの結果</p>
+    <div class="big" id="score">0 個</div>
+    <div class="title" id="title"></div>
+    <div class="bubble"><b>1月の印刷の豆知識</b><span id="fact"></span></div>
+    <a class="btn sub" id="coupon" href="#" target="_blank" rel="noopener">公式LINEでクーポンをもらう</a>
+    <button class="btn ghost" id="retry">もう一回あそぶ</button>
+    <a class="btn ghost" href="index.html">ゲーム一覧へ</a>
+  </div>
+</main>
+
+<script>
+let cfg = null;
+let running = false, startT = 0, lastT = 0, lastSpawn = 0, rafId = 0, caught = 0, items = [];
+const $ = (id) => document.getElementById(id);
+const field = $("field");
+
+function setLeft(sec) { $("left").textContent = `残り ${Math.ceil(sec)} 秒`; }
+function setCount() { $("count").textContent = `取った数 ${caught} / ${cfg.target}`; }
+
+function spawn() {
+  const gold = Math.random() < 0.55;
+  const el = document.createElement("div");
+  el.className = "item " + (gold ? "gold" : "plain");
+  el.textContent = gold ? "お年玉" : "";
+  const w = 68;
+  el.style.left = Math.round(Math.random() * (field.clientWidth - w)) + "px";
+  const it = { el, y: -60, speed: (gold ? 120 : 150) + Math.random() * 90, gold, dead: false };
+  el.addEventListener("pointerdown", (e) => { e.preventDefault(); hit(it); });
+  field.appendChild(el);
+  items.push(it);
+}
+
+function hit(it) {
+  if (it.dead || !running) return;
+  it.dead = true;
+  if (it.gold) { caught++; setCount(); }
+  it.el.classList.add("pop");
+  setTimeout(() => it.el.remove(), 250);
+}
+
+function frame(ts) {
+  if (!running) return;
+  const dt = (ts - lastT) / 1000;
+  lastT = ts;
+  const left = Math.max(0, cfg.seconds - (ts - startT) / 1000);
+  setLeft(left);
+  $("timebar").style.transform = `scaleX(${left / cfg.seconds})`;
+  if (ts - lastSpawn > 550) { spawn(); lastSpawn = ts; }
+  const H = field.clientHeight;
+  items.forEach((it) => {
+    if (it.dead) return;
+    it.y += it.speed * dt;
+    it.el.style.top = it.y + "px";
+    if (it.y > H) { it.dead = true; it.el.remove(); }
+  });
+  items = items.filter((it) => !it.dead);
+  if (left <= 0) { finish(); return; }
+  rafId = requestAnimationFrame(frame);
+}
+
+function start() {
+  $("start").classList.add("hidden");
+  caught = 0; setCount(); setLeft(cfg.seconds);
+  running = true;
+  startT = performance.now(); lastT = startT; lastSpawn = startT - 600;
+  rafId = requestAnimationFrame(frame);
+}
+
+function finish() {
+  running = false;
+  cancelAnimationFrame(rafId);
+  items.forEach((it) => it.el.remove());
+  items = [];
+  const done = document.createElement("div");
+  done.className = "layer";
+  done.innerHTML = "<p>おしまい！</p>";
+  field.appendChild(done);
+  setTimeout(showResult, 900);
+}
+
+function showResult() {
+  const cleared = caught >= cfg.target;
+  $("score").textContent = `${caught} 個`;
+  $("title").textContent = cleared ? "クリア！ おみごとです" : "おしい！ もう一回いこう";
+  $("fact").textContent = cfg.fact;
+  $("coupon").href = cfg.couponUrl;
+  $("result").classList.remove("hidden");
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("go").addEventListener("click", start);
+
+$("retry").addEventListener("click", () => {
+  items.forEach((it) => it.el.remove());
+  items = [];
+  field.querySelectorAll(".layer:not(#start)").forEach((n) => n.remove());
+  $("start").classList.remove("hidden");
+  $("result").classList.add("hidden");
+  $("timebar").style.transform = "scaleX(1)";
+  setLeft(cfg.seconds); caught = 0; setCount();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+fetch("data/month.json", { cache: "no-cache" })
+  .then((r) => r.json())
+  .then((all) => {
+    const o = all.otoshidama;
+    cfg = { seconds: o.seconds, target: o.target, fact: o.fact, couponUrl: all.couponUrl };
+    setLeft(cfg.seconds); setCount();
+    $("go").disabled = false;
+  })
+  .catch(() => {
+    $("start").innerHTML = "<p>読み込みに失敗しました。ページを開き直してください。</p>";
+  });
+</script>
+</body>
+</html>

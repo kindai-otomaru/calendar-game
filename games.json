@@ -1,5 +1,11 @@
 [
   {
+    "id": "otoshidama",
+    "title": "お年玉キャッチ",
+    "subtitle": "金色の封筒を15秒でキャッチ",
+    "file": "play_otoshidama.html"
+  },
+  {
     "id": "color-pick",
     "title": "色あてクイズ",
     "subtitle": "9問で色の目利きに挑戦",
