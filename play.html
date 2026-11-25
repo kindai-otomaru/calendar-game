@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>お年玉キャッチ</title>
+</head>
+<body style="font-family:'Noto Sans JP',sans-serif;padding:24px;color:#2C2C2C">
+<p>ゲームを開いています…</p>
+<script>
+Promise.all([
+  fetch("data/month.json", { cache: "no-cache" }).then((r) => r.json()),
+  fetch("games.json", { cache: "no-cache" }).then((r) => r.json())
+])
+  .then(([m, all]) => {
+    const ids = Array.isArray(m.games) && m.games.length ? m.games : all.map((g) => g.id);
+    const g = all.find((x) => x.id === ids[0]);
+    location.replace(g ? g.file : "index.html");
+  })
+  .catch(() => location.replace("index.html"));
+</script>
+</body>
+</html>
