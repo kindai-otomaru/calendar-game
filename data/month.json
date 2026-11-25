@@ -98,10 +98,7 @@
     ]
   },
   "games": [
-    "otoshidama",
-    "color-pick",
-    "color-slider",
-    "print-quiz"
+    "otoshidama"
   ],
   "otoshidama": {
     "seconds": 10,
